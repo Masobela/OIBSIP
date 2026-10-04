@@ -1,34 +1,60 @@
-# Task 1: Basic Network Scanning with Nmap
+# Task 1 — Basic Network Scanning with Nmap
 
-## What I'm Doing
-I'm using a tool called **Nmap** to scan a computer on my own network and find out:
-- Which "doors" (ports) are open on it
-- What programs (services) are running behind those doors
-- What operating system it's using
+## 1. Objective
 
-Think of it like knocking on every door of a house to see which ones are unlocked, and figuring out who lives behind each one.
+The objective of this project was to perform a basic network security assessment using Nmap against an intentionally vulnerable Linux virtual machine in an isolated lab environment.
 
-## Why It Matters
-Every open port is a possible way into a computer. Security people scan networks to find these open doors BEFORE a hacker does, so they can close the ones that don't need to be open.
+The assessment focused on identifying:
 
-## What I'll Produce
-- A text file (`nmap_scan_results.txt`) with my scan results
-- Screenshots of my terminal while scanning
-- Notes on each open port: what it does and whether it's risky
-- A README explaining what Nmap is and the rules for using it safely
+- Open TCP ports
+- Running network services
+- Service and software versions
+- Operating system information
+- Potential security risks associated with exposed services
 
-## Tools I'm Using
-- Nmap (the scanning tool)
-- A virtual machine (a "practice computer" inside my computer, so I'm not scanning anyone else's real device)
+---
 
-## ⚠️ Safety Rule
-I only scan machines that belong to me, inside my own test VM. I never scan computers or networks that aren't mine — that would be illegal.
+## 2. Lab Environment
 
-## Status
-- [ ] Install Nmap
-- [ ] Basic scan
-- [ ] Service version scan
-- [ ] OS detection scan
-- [ ] Document open ports & risks
-- [ ] Screenshots added
-- [ ] README written
+### Security Testing Machine
+- Operating System: Kali Linux
+- Tool: Nmap
+
+### Target Machine
+- Operating System: Linux
+- Purpose: Intentionally vulnerable laboratory target
+- Target IP Address: 192.168.56.101
+
+### Network
+- VirtualBox isolated/internal network
+- Network distance: 1 hop
+
+---
+
+## 3. Methodology
+
+The assessment was performed using the following steps:
+
+1. Identified the target machine's IP address.
+2. Tested connectivity between Kali Linux and the target.
+3. Performed a basic Nmap TCP port scan.
+4. Used Nmap service/version detection with `-sV`.
+5. Used Nmap operating system detection with `-O`.
+6. Combined service/version and OS detection.
+7. Saved the scan results to `nmap_scan.txt`.
+8. Reviewed the exposed services and identified areas requiring security attention.
+9. Documented recommended security controls.
+
+---
+
+## 4. Nmap Commands Used
+
+### Basic Network Scan
+
+```bash
+nmap 192.168.56.101
+nmap -sV 192.168.56.101
+sudo nmap -O 192.168.56.101
+sudo nmap -sV -O 192.168.56.101
+sudo nmap -sV -O 192.168.56.101 -oN nmap_scan.txt
+
