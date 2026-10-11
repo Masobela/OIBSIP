@@ -1,0 +1,170 @@
+========================================
+TASK 3 - SQL INJECTION ON DVWA (LOW SECURITY)
+OIBSIP Cyber Security Internship - Neo Masobela
+========================================
+Date            : 2026-10-10 (screen recording date, host clock)
+Source          : Screen recording of the practical + task notes
+Marking         : [NOT RECORDED] = not visible in the recording
+                  [REDACTED]     = removed on purpose (credential)
+
+========================================
+1. LAB ENVIRONMENT
+========================================
+OS              : Kali Linux (virtual machine)
+Web server      : Apache (version [NOT RECORDED])
+Database        : MariaDB 11.8.6-MariaDB-6 (from client banner)
+PHP             : 8.4.22 (from DVWA Setup Check page)
+Application     : Damn Vulnerable Web Application (DVWA)
+DVWA git ref    : 068d974487a297c155c48722f9fcf7180a83adc4
+Local URL       : http://127.0.0.1/dvwa/
+Security level  : Low
+Scope           : Deliberately vulnerable app in an isolated local lab.
+                  No real website was tested.
+
+========================================
+2. SETUP SUMMARY
+========================================
+2.1 DVWA clone
+$ git clone <official DVWA repository> /var/www/html/dvwa
+[COMMAND AND OUTPUT NOT RECORDED]
+Official repository: https://github.com/digininja/DVWA
+Observed install path (terminal prompt): /var/www/html/dvwa/config
+
+2.2 Config file check (observation)
+Line 21 of the DVWA config file was displayed:
+21:$_DVWA[ 'db_password' ] = getenv('DB_PASSWORD') ?: '[REDACTED]';
+
+2.3 Database and user creation (MariaDB client)
+$ sudo mariadb
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 31
+Server version: 11.8.6-MariaDB-6 from Debian
+
+MariaDB [(none)]> CREATE DATABASE dvwa;
+Query OK, 1 row affected (0.005 sec)
+
+MariaDB [(none)]> CREATE USER 'dvwa'@'127.0.0.1' IDENTIFIED BY '[REDACTED]';
+Query OK, 0 rows affected (0.021 sec)
+
+MariaDB [(none)]> GRANT ALL PRIVILEGES ON dvwa.* TO 'dvwa'@'127.0.0.1';
+Query OK, 0 rows affected (0.008 sec)
+
+2.4 Web access
+- Firefox first opened http://127.0.0.1/ and showed "Unable to connect".
+- Web server start command: [NOT RECORDED]
+- DVWA then loaded: http://127.0.0.1/dvwa/setup.php ("Database Setup")
+
+2.5 DVWA Setup Check page (observed values)
+Operating system: *nix
+Web Server SERVER_NAME: 127.0.0.1
+PHP version: 8.4.22
+Backend database: MySQL/MariaDB
+Database username: dvwa
+Database password: ****** (masked by DVWA)
+Database database: dvwa
+Database host: 127.0.0.1
+Database port: 3306
+
+2.6 Database setup result
+Per task notes: DVWA database setup completed.
+The "Create / Reset Database" click and its result: [NOT RECORDED]
+Later pages (Security, SQL Injection) loaded and returned data.
+
+2.7 Security level
+DVWA Security page: "Security level is currently: impossible."
+Level changed to Low using the dropdown and Submit.
+DVWA Security page: "Security level is currently: low."
+
+========================================
+3. TEST 1 - NORMAL INPUT
+========================================
+Page            : DVWA > Vulnerability: SQL Injection
+Input (User ID) : 1
+Address bar     : http://127.0.0.1/dvwa/vulnerabilities/sqli/?id=1&Submit=Submit#
+
+Output:
+ID: 1
+First name: admin
+Surname: admin
+
+Records returned: 1
+
+========================================
+4. TEST 2 - SQL INJECTION PAYLOAD
+========================================
+Page            : DVWA > Vulnerability: SQL Injection
+Input (User ID) : 1' OR '1'='1
+Address bar     : http://127.0.0.1/dvwa/vulnerabilities/sqli/?id=1'+OR+'1'%3D'1&Submit=Submit#
+
+Output:
+ID: 1' OR '1'='1
+First name: admin
+Surname: admin
+
+ID: 1' OR '1'='1
+First name: Gordon
+Surname: Brown
+
+ID: 1' OR '1'='1
+First name: Hack
+Surname: Me
+
+ID: 1' OR '1'='1
+First name: Pablo
+Surname: Picasso
+
+ID: 1' OR '1'='1
+First name: Bob
+Surname: Smith
+
+Records returned: 5
+
+========================================
+5. COMPARISON
+========================================
+Input                 Records returned
+1                     1   (admin / admin)
+1' OR '1'='1          5   (admin / admin, Gordon / Brown, Hack / Me,
+                           Pablo / Picasso, Bob / Smith)
+
+========================================
+6. FINDINGS
+========================================
+OBSERVED
+- Normal input "1" returned one record.
+- The input "1' OR '1'='1" returned five records.
+- The same input field and the same page were used in both tests.
+- The injected input appears in the page address as id=1'+OR+'1'%3D'1.
+- The page shows only first name and surname for each record.
+
+INTERPRETATION (NOT DIRECTLY OBSERVED)
+- The always-true condition '1'='1 changed the behaviour of the
+  vulnerable query, so it matched every row instead of one.
+- This is consistent with user input being placed into the SQL query
+  without safe handling at the Low level.
+- The query source code was not shown, so the exact query is unknown.
+
+NOT TESTED
+- Medium, High and Impossible security levels.
+- Any other payload or technique.
+- Any other table or column.
+
+========================================
+7. REMEDIATION NOTE
+========================================
+- Use prepared statements (parameterized queries) so that user input is
+  treated as data and never as SQL code.
+- Also validate input (for example, accept numbers only for an ID) and
+  use a database account with minimum permissions.
+
+========================================
+8. CONCLUSION
+========================================
+At Low security, DVWA returned one record for the normal input "1" and
+five records for the payload "1' OR '1'='1". The always-true condition
+altered the behaviour of the vulnerable query. Parameterized queries
+(prepared statements) are the main fix.
+
+Scope: deliberately vulnerable app in an isolated local lab, for
+educational and training purposes only.
+========================================
