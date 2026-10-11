@@ -1,0 +1,262 @@
+========================================
+TASK 2 - BASIC FIREWALL CONFIGURATION WITH UFW
+OIBSIP Cyber Security Internship - Neo Masobela
+========================================
+Date            : 2026-10-05 (screen recording date, host clock)
+Source          : Screen recording of the practical + task write-up
+Marking         : [OUTPUT NOT RECORDED] = not visible in the recording
+                  [NOT TESTED]          = no test was performed
+
+========================================
+1. LAB ENVIRONMENT
+========================================
+Firewall host   : Kali Linux            192.168.56.102 (eth0)
+Test client     : Metasploitable 2      192.168.56.101
+Tool            : UFW 0.36.2
+Network         : Isolated local virtual lab (no external systems)
+
+Observation: at the start, Kali eth0 had no IPv4 address.
+Address was assigned manually (see section 5).
+
+========================================
+2. UFW INSTALL AND VERSION
+========================================
+$ sudo apt update
+[OUTPUT NOT RECORDED]
+
+$ sudo apt install ufw -y
+[OUTPUT PARTIALLY RECORDED - recording starts near the end of the install]
+Get:1 http://mirror.africloud.com/kali kali-rolling/main amd64 ufw all 0.36.2-10 [168 kB]
+Fetched 168 kB in 3s (55.6 kB/s)
+Selecting previously unselected package ufw.
+Preparing to unpack .../archives/ufw_0.36.2-10_all.deb ...
+Unpacking ufw (0.36.2-10) ...
+Setting up ufw (0.36.2-10) ...
+Creating config file /etc/ufw/before.rules with new version
+Creating config file /etc/ufw/before6.rules with new version
+Creating config file /etc/ufw/after.rules with new version
+Creating config file /etc/ufw/after6.rules with new version
+update-rc.d: It looks like a non-network service, we enable it.
+Created symlink '/etc/systemd/system/multi-user.target.wants/ufw.service'
+  -> '/usr/lib/systemd/system/ufw.service'.
+
+$ ufw --version
+ufw 0.36.2
+Copyright 2008-2023 Canonical Ltd.
+
+Note: the apt commands are taken from the task write-up. They are not
+visible in the recording.
+
+========================================
+3. DEFAULT POLICIES AND RULES
+========================================
+$ sudo ufw default deny incoming
+Default incoming policy changed to 'deny'
+(be sure to update your rules accordingly)
+
+$ sudo ufw default allow outgoing
+Default outgoing policy changed to 'allow'
+(be sure to update your rules accordingly)
+
+$ sudo ufw allow 22/tcp
+Rules updated
+Rules updated (v6)
+
+$ sudo ufw deny 80/tcp
+Rules updated
+Rules updated (v6)
+
+$ sudo ufw allow 443/tcp
+Rules updated
+Rules updated (v6)
+
+$ sudo ufw deny 21/tcp
+Rules updated
+Rules updated (v6)
+
+========================================
+4. ENABLE AND VERIFY
+========================================
+$ sudo ufw status numbered
+Status: inactive
+
+$ sudo ufw enable
+Firewall is active and enabled on system startup
+
+$ sudo ufw status numbered
+Status: active
+
+     To                         Action      From
+     --                         ------      ----
+[ 1] 22/tcp                     ALLOW IN    Anywhere
+[ 2] 80/tcp                     DENY IN     Anywhere
+[ 3] 443/tcp                    ALLOW IN    Anywhere
+[ 4] 21/tcp                     DENY IN     Anywhere
+[ 5] 22/tcp (v6)                ALLOW IN    Anywhere (v6)
+[ 6] 80/tcp (v6)                DENY IN     Anywhere (v6)
+[ 7] 443/tcp (v6)               ALLOW IN    Anywhere (v6)
+[ 8] 21/tcp (v6)                DENY IN     Anywhere (v6)
+
+========================================
+5. NETWORK SETUP AND CONNECTIVITY
+========================================
+$ ip -4 addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    inet 127.0.0.1/8 scope host lo
+3: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    inet 10.0.3.15/24 brd 10.0.3.255 scope global dynamic noprefixroute eth1
+
+$ sudo ip addr add 192.168.56.102/24 dev eth0
+[NO OUTPUT]
+
+$ sudo ip link set eht0 up
+Cannot find device "eht0"
+(typing error; corrected in the next command)
+
+$ sudo ip link set eth0 up
+[NO OUTPUT]
+
+$ ip -4 addr show eth0
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    inet 192.168.56.102/24 scope global eth0
+
+msfadmin@metasploitable:~$ ifconfig
+eth0      Link encap:Ethernet  HWaddr 08:00:27:6d:72:07
+          inet addr:192.168.56.101  Bcast:192.168.56.255  Mask:255.255.255.0
+
+$ ping -c 4 192.168.56.101
+PING 192.168.56.101 (192.168.56.101) 56(84) bytes of data.
+64 bytes from 192.168.56.101: icmp_seq=1 ttl=64 time=6.07 ms
+64 bytes from 192.168.56.101: icmp_seq=2 ttl=64 time=1.80 ms
+64 bytes from 192.168.56.101: icmp_seq=3 ttl=64 time=2.43 ms
+64 bytes from 192.168.56.101: icmp_seq=4 ttl=64 time=1.96 ms
+
+--- 192.168.56.101 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3005ms
+rtt min/avg/max/mdev = 1.803/3.066/6.069/1.749 ms
+
+========================================
+6. SSH TEST (TCP 22)
+========================================
+--- Before the SSH service was started ---
+$ nc -zv 192.168.56.102 22                      (run on Kali)
+192.168.56.102: inverse host lookup failed: Unknown host
+(UNKNOWN) [192.168.56.102] 22 (ssh) : Connection refused
+
+msfadmin@metasploitable:~$ nc -zv 192.168.56.102 22
+192.168.56.102: inverse host lookup failed: Host name lookup failure
+(UNKNOWN) [192.168.56.102] 22 (ssh) : Connection refused
+
+--- Starting SSH on Kali ---
+$ sudo system start ssh
+sudo: system: command not found
+(typing error; corrected in the next command)
+
+$ sudo systemctl start ssh
+[NO OUTPUT]
+
+$ sudo ss -lntp | grep ':22'
+LISTEN 0  128  0.0.0.0:22  0.0.0.0:*  users:(("sshd",pid=13650,fd=6))
+LISTEN 0  128     [::]:22     [::]:*  users:(("sshd",pid=13650,fd=7))
+
+--- After the SSH service was started ---
+msfadmin@metasploitable:~$ nc -zv 192.168.56.102 22
+192.168.56.102: inverse host lookup failed: Host name lookup failure
+(UNKNOWN) [192.168.56.102] 22 (ssh) open
+
+========================================
+7. HTTP TEST (TCP 80)
+========================================
+msfadmin@metasploitable:~$ nc -zv 192.168.56.102 80
+192.168.56.102: inverse host lookup failed: Host name lookup failure
+[NO FURTHER OUTPUT - no connection result was printed]
+
+Observation: the command did not complete. It stayed without a reply for
+roughly 45 seconds, then the shell prompt returned.
+How it ended (Ctrl+C or timeout) is not shown on screen.
+[VERIFICATION OF A LISTENING HTTP SERVICE ON KALI PORT 80: NOT PERFORMED]
+
+========================================
+8. FINAL VERIFICATION
+========================================
+$ sudo ufw status verbose
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW IN    Anywhere
+80/tcp                     DENY IN     Anywhere
+443/tcp                    ALLOW IN    Anywhere
+21/tcp                     DENY IN     Anywhere
+22/tcp (v6)                ALLOW IN    Anywhere (v6)
+80/tcp (v6)                DENY IN     Anywhere (v6)
+443/tcp (v6)               ALLOW IN    Anywhere (v6)
+21/tcp (v6)                DENY IN     Anywhere (v6)
+
+========================================
+9. FINDINGS (OBSERVED)
+========================================
+- UFW 0.36.2 installed on Kali Linux.
+- Firewall status: active, enabled on system startup.
+- Default incoming policy: deny.
+- Default outgoing policy: allow.
+- TCP 22  : ALLOW IN (IPv4 and IPv6)
+- TCP 80  : DENY IN  (IPv4 and IPv6)
+- TCP 443 : ALLOW IN (IPv4 and IPv6)
+- TCP 21  : DENY IN  (IPv4 and IPv6)
+- Logging: on (low).
+- Ping Kali -> Metasploitable 2 with the firewall active: 0% packet loss.
+- SSH (sshd) listening on 0.0.0.0:22 and [::]:22.
+- Metasploitable 2 -> Kali TCP 22: "open".
+
+========================================
+10. TEST RESULTS
+========================================
+CONFIRMED
+- UFW installed and version 0.36.2 verified.
+- Default policies and all four rules present in UFW status output.
+- Firewall active after "ufw enable".
+- Connectivity between the VMs (0% packet loss).
+- SSH listening on Kali.
+- Metasploitable 2 connected to Kali TCP 22 (nc reported "open").
+
+INCONCLUSIVE
+- TCP 80 test: no response received and the command did not complete.
+  Not enough to prove the firewall blocked it, because:
+    * no check showed that an HTTP service was listening on Kali port 80
+    * the same test was not repeated with the deny rule removed
+    * the way the command ended is not shown on screen
+- TCP 22 "Connection refused" (before SSH was started): shows the port
+  was reachable but nothing was listening. On its own it does not
+  confirm the firewall rule.
+
+NOT TESTED
+- TCP 443 and TCP 21 connection tests.
+- IPv6 rules.
+- Behaviour of the outgoing policy beyond the successful ping.
+
+========================================
+11. INTERPRETATION (NOT DIRECTLY OBSERVED)
+========================================
+- The "Connection refused" replies before SSH was started suggest packets
+  reached Kali, which is consistent with the allow rule on TCP 22.
+- The silent result on TCP 80 is consistent with a deny (drop) rule.
+  A closed port with no firewall normally answers "Connection refused"
+  quickly. This is an explanation, not proof.
+- With default incoming = deny, the explicit deny rules for TCP 80 and
+  TCP 21 are redundant for blocking. They document intent.
+
+========================================
+12. CONCLUSION
+========================================
+UFW was configured with a deny-by-default incoming policy and four rules
+(allow 22, deny 80, allow 443, deny 21), enabled, and verified with
+status output. SSH access from Metasploitable 2 worked once the SSH
+service was running. The TCP 80 test gave no response, which is
+consistent with the deny rule but is inconclusive on its own.
+
+Scope: isolated local lab for educational and training purposes only.
+========================================
